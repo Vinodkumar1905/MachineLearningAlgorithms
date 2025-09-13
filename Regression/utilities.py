@@ -146,3 +146,15 @@ def predict(x,w,b):
     w = np.array(w, dtype=float)
     return x@w + b
 
+def hotEncode(data,attribute,drop_org_attribute=False):
+    sampleData =  data.copy()
+    one_hot = pd.get_dummies(sampleData[attribute], prefix=attribute,dtype=int)
+
+    sampleData = pd.concat([sampleData, one_hot], axis=1)
+    if drop_org_attribute:
+        sampleData.drop(columns=[attribute],inplace=True)
+    return sampleData
+    
+def upload(city,w,b,mean,std):
+    data = pd.DataFrame([city,w,b,mean,std],columns=["City","Weight","bias","mean","std",])
+    data.to_csv("./Data/coefficent.csv")
