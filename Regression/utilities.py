@@ -1,6 +1,7 @@
+import csv
 import numpy as np
 import pandas as pd
-
+import os
 def compute_cost(x,y,w,b):
     
     m = x.shape[0]  
@@ -127,7 +128,8 @@ def scaling_data(xTrain,xTest):
         stdX.append(stdFeature)
    
     xTrain = helper(xTrain,meanX,stdX)
-    xTest = helper(xTest,meanX,stdX)
+    if xTest:
+        xTest = helper(xTest,meanX,stdX)
     return xTrain,xTest,meanX,stdX
 
 def helper(data,mean,std):
@@ -156,5 +158,18 @@ def hotEncode(data,attribute,drop_org_attribute=False):
     return sampleData
     
 def upload(city,w,b,mean,std):
-    data = pd.DataFrame([city,w,b,mean,std],columns=["City","Weight","bias","mean","std",])
-    data.to_csv("./Data/coefficent.csv")
+
+    filename = "./Data/coefficient.csv"
+    header = ["City","Weights","bias" ,"mean", "std"]
+    rows = [city,w,b,mean,std]
+    file_exists = os.path.isfile(filename)
+    try:
+        with open(filename, "a", newline="") as f:  # 'a' for append
+            writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(header)  
+        writer.writerows(rows)
+    except:
+        raise Exception()
+
+    
