@@ -1,7 +1,12 @@
 from fastapi import FastAPI,status,HTTPException
 import pandas as pd
 import numpy as np 
-from utilities import scaling_data,upload,fit,predict
+from pydantic import BaseModel
+from utilities import scaling_data,upload,fit,predict,hotEncode
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi import Request
+from pathlib import Path
 
 app = FastAPI()
 class Data(BaseModel):
@@ -10,32 +15,48 @@ class Data(BaseModel):
     sqft:float
     location : str
 
-@app.get("/predict",status_code = status.HTTP_204)
-def predict(input:Data):
+# Serve static files (CSS/JS if needed)
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    html_path = Path("templates/index.html")
+    return html_path.read_text(encoding="utf-8")
+
+@app.post("/predict")
+def predictWeb(input:Data):
+    location = input.location.strip().title() 
     try:
-        coefficient = pd.read("./Data/coefficient.csv")
-        coefficient = coefficient[coefficient["City"]==input.location]
+        coefficient = pd.read_csv("./Data/coefficient.csv")
+        coefficient = coefficient[coefficient["City"]==location]
         w = coefficient["Weights"]
         b= coefficient["bias"]
     except:
         data = pd.read_csv("./Data/finalData.csv")
-        X = data.drop(columns="totalprice")
-        X = X[X["location"]=="Ahmedabad"]
-        X = X.drop(columns=["location","pricepersqft"])
-        y = data["totalprice"]
+       
+        data_city = data[data["location"]== location]
+        
+        X = data_city.drop(columns=["location","pricepersqft","totalprice"])
+        
+        y = data_city["totalprice"]
+        
         X,waste,mean,std  = scaling_data(X,None)
-        w,b,cost_history = fit(X,y,np.arrange(data.shape[1]),0,30e-3, 1000)
+       
+        w,b,cost_history = fit(X,y,np.arange(X.shape[1]),0,30e-3, 1000)
         upload(input.location,w,b,mean,std)
-    inputData = pd.DataFrame(input)
+   
     if input.HouseType.lower() == "villa":
         predictData = [input.Bhk,input.sqft,0,0,1]
-        predictData = predictData
     elif input.HouseType.lower() == "flat":
         predictData = [input.Bhk,input.sqft,1,0,0]
     else:
         predictData = [input.Bhk,input.sqft,0,1,0]
-    
-    return predict(predictData,w,b)
+
+    for i in range(len(predictData)):
+        predictData[i] = (predictData[i]-mean[i])/std[i]
+
+    price = predict(predictData,w,b)
+    return float(price)
 
 
 

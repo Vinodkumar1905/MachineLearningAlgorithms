@@ -118,7 +118,9 @@ def testTrainSplit(x,y,train_size,seed=None):
     return x[train_data],x[test_data],y[train_data],y[test_data]
 
 def scaling_data(xTrain,xTest):
-    
+    xTrain = xTrain.to_numpy().astype(float)if isinstance(xTrain, (pd.DataFrame, pd.Series)) else xTrain
+    if xTest:
+        xTest = xTest.to_numpy().astype(float)if isinstance(xTest, (pd.DataFrame, pd.Series)) else xTrain   
     meanX=[]
     stdX =[]
     for i in range(xTrain.shape[1]):
@@ -166,9 +168,9 @@ def upload(city,w,b,mean,std):
     try:
         with open(filename, "a", newline="") as f:  # 'a' for append
             writer = csv.writer(f)
-        if not file_exists:
-            writer.writerow(header)  
-        writer.writerows(rows)
+            if not file_exists:
+                writer.writerow(header)  
+            writer.writerow(rows)
     except:
         raise Exception()
 
