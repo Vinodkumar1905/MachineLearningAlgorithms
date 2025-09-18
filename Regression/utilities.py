@@ -119,8 +119,8 @@ def testTrainSplit(x,y,train_size,seed=None):
 
 def scaling_data(xTrain,xTest):
     xTrain = xTrain.to_numpy().astype(float)if isinstance(xTrain, (pd.DataFrame, pd.Series)) else xTrain
-    if xTest:
-        xTest = xTest.to_numpy().astype(float)if isinstance(xTest, (pd.DataFrame, pd.Series)) else xTrain   
+    if  xTest is not None and len(xTest) > 0:
+        xTest = xTest.to_numpy().astype(float)if isinstance(xTest, (pd.DataFrame, pd.Series)) else xTest  
     meanX=[]
     stdX =[]
     for i in range(xTrain.shape[1]):
@@ -130,7 +130,7 @@ def scaling_data(xTrain,xTest):
         stdX.append(stdFeature)
    
     xTrain = helper(xTrain,meanX,stdX)
-    if xTest:
+    if xTest is not None and len(xTest) > 0:
         xTest = helper(xTest,meanX,stdX)
     return xTrain,xTest,meanX,stdX
 
@@ -163,7 +163,11 @@ def upload(city,w,b,mean,std):
 
     filename = "./Data/coefficient.csv"
     header = ["City","Weights","bias" ,"mean", "std"]
-    rows = [city,w,b,mean,std]
+    
+    weight = '[' + ', '.join(f"{wi:.8g}" for wi in w) + ']'
+    mean = '[' + ', '.join(f"{m:.8g}" for m in mean) + ']'
+    std = '[' + ', '.join(f"{s:.8g}" for s in std) + ']'
+    rows = [city,weight,float(b),mean,std]
     file_exists = os.path.isfile(filename)
     try:
         with open(filename, "a", newline="") as f:  # 'a' for append
